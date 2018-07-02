@@ -1,8 +1,15 @@
 # React 16 WikiData parsing app
 
+This is the React Native version of a [similar app](https://github.com/timofeysie/loranthifolia) written using the new Ionic 4 alpha 7 framework.  The idea is to create a simple app with the same functionality to compare and contrast the two different approaches to hybrid mobile development.
+
+The basic functionality of the app is a list of items pulled from the Wikipedia and WikiMedia APIs.  Choosing an item goes to a detail page with a description of the item.
+
+We will start with the list first as detailed in [the basics](https://facebook.github.io/react-native/docs/using-a-listview).
+
+
 
 ## Table of Contents
-
+* [Creating the list](#creating-the-list)
 * [Creating this project](#creating-this-project)
 * [Updating to New Releases](#updating-to-new-releases)
 * [Available Scripts](#available-scripts)
@@ -25,6 +32,7 @@
   * [Networking](#networking)
   * [iOS Simulator won't open](#ios-simulator-wont-open)
   * [QR Code does not scan](#qr-code-does-not-scan)
+
 
 
 ## Creating this project
@@ -299,7 +307,20 @@ Time:        5.462s
 Time:        1.179s, estimated 4s
 ```
 
-So that app can run.  Just how to preview in a browser?
+So that app can run.  Just how to preview in a browser? 
+
+Then I read this StackOverflow question: [Can React Native apps be tested in a browser?](https://stackoverflow.com/questions/35973914/can-react-native-apps-be-tested-in-a-browser).
+
+
+The accepted answer?
+```
+No, React Native can be tested only in mobile simulators like IOS and Android
+```
+
+Well that answers that!  That's the price of the 'Native' part of the name.
+There are no web alternatives.  Or maybe there are and I just have to find them.  It has been great using Google developer tools to debug Ionic apps which run in a browser as they are web stack apps anyhow.  Any native plugins used (such as fingerprint authentication) will not work in the browser and require the developer to make a workaround for browser testing.
+
+I will have to suspend my previous Ionic experiences and take React Native on its own terms.
 
 
 ## Project structure
