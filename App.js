@@ -1,12 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import FlatListBasic from './FlatList/FlatListBasic';
+import FetchExample from './Fetch/FetchExample';
 
 export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <FlatListBasic></FlatListBasic>
+        <FetchExample></FetchExample>
       </View>
       
     );

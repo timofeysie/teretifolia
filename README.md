@@ -34,6 +34,37 @@ We will start with the list first as detailed in [the basics](https://facebook.g
   * [QR Code does not scan](#qr-code-does-not-scan)
 
 
+## Getting the list
+
+We will be getting the list from a WikiData API call first.  We will also get a larger list from Wikipedia and merge them all together.  But first things first.  We will be starting with [this page](https://facebook.github.io/react-native/docs/network).
+
+Using the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) comes with two basic options for asynchronous work: a Promise or async/await.  We used a Promise for the Ionic app so lets start with that first.
+
+In the example code, the http call code is in the same file as the rendered flat list template.  I will go with that for now, but it doesn't seem like a good idea.  After the basics of this app are done, it is intended to move the parsing code into a third party lib and use it in both the Ionic and React Native app to compare and contrast how smoothing that goes in each project.
+
+So for now, we will go with the basics.
+
+Getting no changes after adding the Fetch class was a little frustrating.  Restarting the build and adding a console log comment made it compile and then we saw the red screen on the device with an error which was lost when we grabbed it (it's a touch screen!  another advantage to being able to debug in a browser safe from touching) the error went away and there was an organge strip at the bottom that said: 
+```Warning: Failed child context type: Invalid child context 'virtualizedCell.cellKey' of type 'n```
+And still no output in the temrinal to show any problems except the comment that was added.
+
+Re-scanning the QR code again shown the red screen error message again:
+```
+Cannot add a child that doesn't have a YogaNode to a parent without a measure function! (Trying ot add a 'RCTRawText[text:jij] to a 'RCTView')
+```
+
+That was something we put in the render html to try and get the source to reload.  After removing that we have the result from the http call, but the orange warning message on the bottom of the screen was still there.  I figured out how to show the whole message and then reduce it again.
+
+One thing we haven't put in the Ionic app yet is a loader.  In our Fetch example, it's done like this:
+```
+if (this.state.isLoading){ return(<ActivityIndicator/>) }
+```
+
+Ionic might be a little more hands on, but not much more.
+
+We're think now where to put the logic to assemble the url.  It should probably be in the state and lifted up to the top level.  We can work on that next.
+
+
 ## Creating the list
 
 We'll start off with the FlatList which only renders elements that are currently showing on the screen, not all the elements at once.  Seems like a good start.

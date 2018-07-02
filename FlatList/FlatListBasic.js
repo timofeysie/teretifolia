@@ -5,7 +5,6 @@ class FlatListBasics extends Component {
   render() {
     return (
       <View style={styles.container}>
-      
         <FlatList
           data={[
             {key: 'Devin'},
