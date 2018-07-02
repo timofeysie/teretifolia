@@ -34,6 +34,40 @@ We will start with the list first as detailed in [the basics](https://facebook.g
   * [QR Code does not scan](#qr-code-does-not-scan)
 
 
+## Creating the list
+
+We'll start off with the FlatList which only renders elements that are currently showing on the screen, not all the elements at once.  Seems like a good start.
+
+After creating the basic flat list, forgot to export the default class and saw the error come up on the device:
+```
+21:09:48: Warning: React.createElement: type is invalid -- expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+Check your code at App.js:9.
+    in App (at registerRootComponent.js:35)
+```
+
+There seems to be a long delay from the error showing up on the device and the console log showing the same thing.   Sometimes the lag is shorter.
+
+Anyhow, the error was due to a type, which fixed, changed the error to this:
+```
+Invariant Violation: Element type is invalid: expected a string
+```
+
+The solution from [this post](https://stackoverflow.com/questions/34130539/uncaught-error-invariant-violation-element-type-is-invalid-expected-a-string) showed a slight change in import style.
+
+In the App.js file, we went from this:
+```
+import { FlatListBasic } from './FlatList/FlatListBasic';
+```
+to this:
+```
+import FlatListBasic from './FlatList/FlatListBasic';
+```
+
+The difference is { MyComponent } imports the export 'MyComponent' from the file but the other one imports the default export from the file.  Now we have our basic list.
+
+There is no header for the page yet which we will need.  But next, lets get the list from WikiData.
+
+
 
 ## Creating this project
 
@@ -264,7 +298,7 @@ in this case CRNA broadcasted with the IP from the WIFI
 
 Decided to give the Expo app a try.  The expo.io link didn't show any download links and had to choose the getting starting menu item and scroll down to find the install on Android link.
 
-Then, turned off mobile data and enable home wife which the laptop is using.
+Then, turned off mobile data and enable home wifi which the laptop is using.
 
 After scanning the QR code that is shown in the terminal npm start output, the message says:
 ```
