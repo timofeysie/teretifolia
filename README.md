@@ -308,7 +308,7 @@ With other React apps I've worked on, none have a flat directory structure such 
 
 In a usual React app, there is a node_modules, a public and a src folder.  Sub-folders by feature are encouraged.
 
-In the React Native, there is just a basic App.js and App.test.js.
+In the React Native, there is just a basic App.js and App.test.js.  They are leaving all the decision up to the developer here.  I know a few developers whom I would not trust to create a project directory structure ... just saying.
 
 
 ## Original readme blurb

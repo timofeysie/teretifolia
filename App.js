@@ -5,8 +5,8 @@ export default class App extends React.Component {
   render() {
     return (
       <View style={styles.container}>
-        <Text>Don't open up App.js to start working on your app!</Text>
-        <Text>Changes you make will automatically reload.</Text>
+        <Text>Can't open up App.js in a browser to start working.</Text>
+        <Text>Changes you make will automatically reload on the Expo app.</Text>
         <Text>Shake your phone to open the developer menu.</Text>
       </View>
     );
