@@ -36,7 +36,7 @@ We will start with the list first as detailed in [the basics](https://facebook.g
 
 ## Debugging React Native
 
-After installing the VSCODE [React Native Tools]() plugin, out of the box it gave me this error:
+After installing the VSCome [React Native Tools](https://github.com/Microsoft/vscode-react-native) plugin, out of the box it gave me this error:
 ```
 Exception has occurred: Error
 SyntaxError: Unexpected token import
