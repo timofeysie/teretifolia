@@ -34,6 +34,275 @@ We will start with the list first as detailed in [the basics](https://facebook.g
   * [QR Code does not scan](#qr-code-does-not-scan)
 
 
+## Debugging React Native
+
+After installing the VSCODE [React Native Tools]() plugin, out of the box it gave me this error:
+```
+Exception has occurred: Error
+SyntaxError: Unexpected token import
+/Users/tim/repos/loranthifolia-teretifolia-curator/teretifolia/node_modules/expo/src/Expo.js:2
+import './environment/validate';
+^^^^^^
+SyntaxError: Unexpected token import
+```
+
+We will not be friends if all this tool does is cough at code in the node_modules directory.  Then saw a warning in the Debug console that Node.js version 6.9.2 was detected.  Right.  I had switched to that version due to a problem with the Commitizen tool used by the Curator npm library when trying to publish a new version of the lib to npm.  So, did the old ```$ nvm use 8``` and another ```npm start``` and lets see how the debugging goes now.
+
+Our console log finally comes out with the JSON version of the SPARQL API call response:
+```
+12:45:46: response.json Object {
+12:45:46:   "head": Object {
+12:45:46:     "vars": Array [
+12:45:46:       "cognitive_bias",
+12:45:46:       "cognitive_biasLabel",
+12:45:46:       "cognitive_biasDescription",
+12:45:46:     ],
+12:45:46:   },
+12:45:46:   "results": Object {
+12:45:46:     "bindings": Array [
+12:45:46:       Object {
+12:45:46:         "cognitive_bias": Object {
+12:45:46:           "type": "uri",
+12:45:46:           "value": "http://www.wikidata.org/entity/Q18570",
+12:45:46:         },
+12:45:46:         "cognitive_biasDescription": Object {
+12:45:46:           "type": "literal",
+12:45:46:           "value": "social phenomenon",
+12:45:46:           "xml:lang": "en",
+12:45:46:         },
+12:45:46:         "cognitive_biasLabel": Object {
+12:45:46:           "type": "literal",
+12:45:46:           "value": "Hawthorne effect",
+12:45:46:           "xml:lang": "en",
+12:45:46:         },
+12:45:46:       },
+```
+
+The error holding us up is:
+```
+12:45:47: TypeError: undefined is not an object (evaluating 'item.cognitive_biasDescription.value')
+
+This error is located at:
+    in CellRenderer (at VirtualizedList.js:670)
+```
+
+One has to search through the stack trace to find the line in the project souce responsible:
+```
+This error is located at:
+    in CellRenderer (at VirtualizedList.js:670)
+    in RCTView (at View.js:60)
+    in View (at ScrollView.js:791)
+    in RCTScrollView (at ScrollView.js:887)
+    in ScrollView (at VirtualizedList.js:1024)
+    in VirtualizedList (at FlatList.js:644)
+    in FlatList (at FetchExample.js:40)
+    in RCTView (at View.js:60)
+    in View (at FetchExample.js:39)
+    in FetchExample (at App.js:10)
+    in RCTView (at View.js:60)
+    in View (at App.js:9)
+    in App (at registerRootComponent.js:35)
+    in RootErrorBoundary (at registerRootComponent.js:34)
+    in ExpoRootComponent (at renderApplication.js:33)
+    in RCTView (at View.js:60)
+    in View (at AppContainer.js:102)
+    in RCTView (at View.js:60)
+    in View (at AppContainer.js:122)
+    in AppContainer (at renderApplication.js:32)
+* Fetch/FetchExample.js:43:44 in renderItem
+- node_modules/react-native/Libraries/Lists/FlatList.js:623:24 in _renderItem
+```
+
+Can you find Waldo?  Waldo is right in the middle there:
+```
+in View (at FetchExample.js:39)
+```
+
+That's the beginning of the <View> element in the render function.
+Some (OK many) items don't have descriptions.  So this:
+```
+item.cognitive_biasDescription.value
+```
+Was causing the error.  But, we don't really want to show the description there anyhow.  And, since there are so few descriptions available on WikiData, we need to also parse Wikipedia's WikiMedia API call result to get a more complete list of cognitive bias and their brief descriptions.  As yet we haven't written this Map merge feature.  That will come soon.  
+
+We can add routing and a call to the; Wikipedia page description when an item in our current list is called.  Then, functionality-wise, the React Native app will be on par with the Ionic 4 app.
+
+For now, the React Native Tool for debugging is still stuck on Node.js v6.9.2.  Someone will have to figure out how to make VSCode us a more recent version since it's not picking up the changes nvm makes in the terminal.
+
+
+## Using the curator package
+
+After refactoring the parts needed to create the urls and parse the responses for the WikiData and WikiMedia API calls into an npm library called art-curator, this is how it's used:
+```
+import curator from 'art-curator';
+```
+
+To then get the SPARQL url to get the base list of cognitive bias, we call this function:
+```
+let wUrl = curator.createWikiDataUrl();
+```
+
+That url looks like this:
+```
+https://query.wikidata.org/sparql?format=json&query=%0A%20%20%20%20%20%20%20%20SELECT%20%3Fcognitive_bias%20%3Fcognitive_biasLabel%20%3Fcognitive_biasDescription%20WHERE%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20SERVICE%20wikibase%3Alabel%20%7B%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Fcognitive_bias%20wdt%3AP31%20wd%3AQ1127759
+```
+
+Then we use Fetch to call that url and then put the result in the list.
+
+To test the app, this had to be done again:
+```
+$ sudo sysctl -w kern.maxfiles=5242880
+$ sudo sysctl -w kern.maxfilesperproc=524288
+```
+
+I assumed that was a one time change, but apparently not.  That's one more reason to install Watchman.
+
+After a while and the app was finally running we get this response:
+```
+6:06:51 PM: wUrl Promise {
+6:06:51 PM:   "_40": 0,
+6:06:51 PM:   "_55": null,
+6:06:51 PM:   "_65": 0,
+6:06:51 PM:   "_72": null,
+6:06:51 PM: }
+```
+
+Maybe it's having a problem with the https?
+
+9:13:58 PM: Starting packager...
+9:16, the app loads in the device.
+Made some more changes to the code to show the list from the result even though not sure if the result is being parsed the same was as the rxjs behaviour subject is in the Ionic version.
+Finally, at 9:26 saw a blank screen, then a red screen with an error:
+```
+9:26:40 PM: TypeError: undefined is not an object (evaluating 'item.cognitive_biasDescription.value')
+```
+There are eight of those each with a long stack trace.  Then at the end we get this also:
+```
+9:26:42 PM: [Unhandled promise rejection: TypeError: undefined is not an object (evaluating 'response1.results.bindings')]
+* Fetch/FetchExample.js:17:39 in <unknown>
+- node_modules/promise/setimmediate/core.js:37:14 in tryCallOne
+- node_modules/promise/setimmediate/core.js:123:25 in <unknown>
+- ... 10 more stack frames from framework internals
+```
+
+The result object looks like this:
+```
+Response {
+9:26:39 PM:   "_bodyBlob": Blob {
+9:26:39 PM:     "_data": Object {
+9:26:39 PM:       "blobId": "7a2fc193-6c9a-4f50-be57-352da8aa336b",
+9:26:39 PM:       "offset": 0,
+9:26:39 PM:       "size": 28461,
+9:26:39 PM:     },
+9:26:39 PM:   },
+9:26:39 PM:   "_bodyInit": Blob {
+9:26:39 PM:     "_data": Object {
+9:26:39 PM:       "blobId": "7a2fc193-6c9a-4f50-be57-352da8aa336b",
+9:26:39 PM:       "offset": 0,
+9:26:39 PM:       "size": 28461,
+9:26:39 PM:     },
+9:26:39 PM:   },
+9:26:39 PM:   "headers": Headers {
+9:26:39 PM:     "map": Object {
+9:26:39 PM:       "accept-ranges": Array [
+9:26:39 PM:         "bytes",
+9:26:39 PM:       ],
+9:26:39 PM:       "access-control-allow-origin": Array [
+9:26:39 PM:         "*",
+9:26:39 PM:       ],
+9:26:39 PM:       "age": Array [
+9:26:39 PM:         "0",
+9:26:39 PM:       ],
+9:26:39 PM:       "cache-control": Array [
+9:26:39 PM:         "public, max-age=300",
+9:26:39 PM:       ],
+9:26:39 PM:       "content-type": Array [
+9:26:40 PM:         "application/sparql-results+json",
+9:26:40 PM:       ],
+9:26:40 PM:       "date": Array [
+9:26:40 PM:         "Thu, 05 Jul 2018 11:25:45 GMT",
+9:26:40 PM:       ],
+9:26:40 PM:       "server": Array [
+9:26:40 PM:         "nginx/1.13.6",
+9:26:40 PM:       ],
+9:26:40 PM:       "strict-transport-security": Array [
+9:26:40 PM:         "max-age=106384710; includeSubDomains; preload",
+9:26:40 PM:       ],
+9:26:40 PM:       "vary": Array [
+9:26:40 PM:         "Accept, Accept-Encoding",
+9:26:40 PM:       ],
+9:26:40 PM:       "via": Array [
+9:26:40 PM:         "1.1 varnish (Varnish/5.1), 1.1 varnish (Varnish/5.1)",
+9:26:40 PM:       ],
+9:26:40 PM:       "x-analytics": Array [
+9:26:40 PM:         "WMF-Last-Access=05-Jul-2018;WMF-Last-Access-Global=05-Jul-2018;https=1",
+9:26:40 PM:       ],
+9:26:40 PM:       "x-cache": Array [
+9:26:40 PM:         "cp2018 miss, cp2006 miss",
+9:26:40 PM:       ],
+9:26:40 PM:       "x-cache-status": Array [
+9:26:40 PM:         "miss",
+9:26:40 PM:       ],
+9:26:40 PM:       "x-client-ip": Array [
+9:26:40 PM:         "49.195.40.73",
+9:26:40 PM:       ],
+9:26:40 PM:       "x-served-by": Array [
+9:26:40 PM:         "wdqs2001",
+9:26:40 PM:       ],
+9:26:40 PM:       "x-varnish": Array [
+9:26:40 PM:         "239826340, 50947718",
+9:26:40 PM:       ],
+9:26:40 PM:     },
+9:26:40 PM:   },
+9:26:40 PM:   "ok": true,
+9:26:40 PM:   "status": 200,
+9:26:40 PM:   "statusText": undefined,
+9:26:40 PM:   "type": "default",
+9:26:40 PM:   "url": "https://query.wikidata.org/sparql?format=json&query=%0A%20%20%20%20%20%20%20%20SELECT%20%3Fcognitive_bias%20%3Fcognitive_biasLabel%20%3Fcognitive_biasDescription%20WHERE%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20SERVICE%20wikibase%3Alabel%20%7B%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Fcognitive_bias%20wdt%3AP31%20wd%3AQ1127759.%0A%20%20%20%20%20%20%20%20%7D%0A%09%09LIMIT%201000",
+9:26:40 PM: }
+```
+
+Lets look at the result from the Ionic app.  Ionic serve run at 9:33.
+9:35 the list of bias are in the browser.
+
+It might be helpful to look at what is happening in the Ionic app's http call to compare with the Fetch we're doing in this React native app.
+
+```
+this.http.get(url).map((res: any) => {
+    return res.json();
+  }).subscribe ((data: any) => {
+    this.myData.next(data.results.bindings);
+  },(err: any) => console.error("loadAllPackages: ERROR"),
+    () => {
+      console.log("loadAllPackages: always")
+    }
+);
+```
+
+The res object looks like this:
+```
+Response {_body: "head": { vars": [ "cognitive_bias",  "cognitive_biasLabel", "cognitive_biasDescription" ]↵  },↵  "results" : {↵    "bindings" : [ {↵      "cognitive_bias" : {↵        "type" : "uri",↵        "value" : "http://www.wikidata.org/entity/Q18570"↵      },↵      "cognitive_biasLabel" : {↵        "xml:lang" : "en",↵        "type" : "literal",↵        "value" : "Hawthorne effect"↵      },↵      "cognitive_biasDescription" : {↵        "xml:lang" : "en",↵        "type" : "literal",↵        "value" : "social phenomenon"↵      }↵    }, {↵   ]}}
+
+The object also has the standard headers with url and status info.  The data object is little different in that now it's a JSON version which is a JSON object with two parameters: ```{head: {...}, results: {...}}```.
+
+The myData object is a Behavior Subject using an interface to label and description field names. The results.bindings value is an array of 90 objects that look like this:
+```
+cognitive_bias: {type: "uri", value: "http://www.wikidata.org/entity/Q18570"}
+cognitive_biasDescription: {xml:lang: "en", type: "literal", value: "social phenomenon"}
+cognitive_biasLabel: {xml:lang: "en", type: "literal", value: "Hawthorne effect"}
+```
+
+These are the things that can be shown in the template.
+
+However, we're getting a blank screen now and now console log out.  That's probably our fault for relying on dumb console loges.  There must be some good debugging tools out there for React Native, right?
+
+There might also be a problem with the way we are using Fetch.  If the API we're working with is returning HTML, instead of returning resp.json() return resp.text() like this:
+```
+fetch(url).then((resp)=>{ return resp.text() }).then((text)=>{ console.log(text) })
+```
+
+
+
 ## Getting the list
 
 We will be getting the list from a WikiData API call first.  We will also get a larger list from Wikipedia and merge them all together.  But first things first.  We will be starting with [this page](https://facebook.github.io/react-native/docs/network).
@@ -55,7 +324,13 @@ Cannot add a child that doesn't have a YogaNode to a parent without a measure fu
 
 That was something we put in the render html to try and get the source to reload.  After removing that we have the result from the http call, but the orange warning message on the bottom of the screen was still there.  I figured out how to show the whole message and then reduce it again.
 
-One thing we haven't put in the Ionic app yet is a loader.  In our Fetch example, it's done like this:
+```
+22:50:05: Warning: Failed child context type: Invalid child context `virtualizedCell.cellKey` of type `number` supplied to `CellRenderer`, expected `string`.
+- node_modules/prop-types/checkPropTypes.js:19:20 in printWarning
+...
+```
+
+Can deal with that a little later.  One thing we haven't put in the Ionic app yet is a loader.  In our Fetch example, it's done like this:
 ```
 if (this.state.isLoading){ return(<ActivityIndicator/>) }
 ```
@@ -89,6 +364,7 @@ In the App.js file, we went from this:
 ```
 import { FlatListBasic } from './FlatList/FlatListBasic';
 ```
+
 to this:
 ```
 import FlatListBasic from './FlatList/FlatListBasic';

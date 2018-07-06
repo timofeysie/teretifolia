@@ -1,5 +1,6 @@
 import React from 'react';
 import { FlatList, ActivityIndicator, Text, View  } from 'react-native';
+import curator from 'art-curator';
 
 export default class FetchExample extends React.Component {
 
@@ -9,12 +10,13 @@ export default class FetchExample extends React.Component {
   }
 
   componentDidMount(){
-    return fetch('https://facebook.github.io/react-native/movies.json')
+    let wUrl = curator.createWikiDataUrl();
+    return fetch(wUrl)
       .then((response) => response.json())
       .then((responseJson) => {
         this.setState({
           isLoading: false,
-          dataSource: responseJson.movies,
+          dataSource: responseJson.results.bindings,
         }, function(){
         });
       })
@@ -36,7 +38,7 @@ export default class FetchExample extends React.Component {
       <View style={{flex: 1, paddingTop:20}}>
         <FlatList
           data={this.state.dataSource}
-          renderItem={({item}) => <Text>{item.title}, {item.releaseYear}</Text>}
+          renderItem={({item}) => <Text>{item.cognitive_biasLabel.value}</Text>}
           keyExtractor={(item, index) => index}
         />
       </View>
