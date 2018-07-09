@@ -9,6 +9,10 @@ We will start with the list first as detailed in [the basics](https://facebook.g
 
 
 ## Table of Contents
+* [Navigation](#navigation)
+* [Debugging React Native](#debugging-react-native)
+* [Using the curator package](#using-the-curator-package)
+* [Getting the list](#getting-the-list)
 * [Creating the list](#creating-the-list)
 * [Creating this project](#creating-this-project)
 * [Updating to New Releases](#updating-to-new-releases)
@@ -32,6 +36,196 @@ We will start with the list first as detailed in [the basics](https://facebook.g
   * [Networking](#networking)
   * [iOS Simulator won't open](#ios-simulator-wont-open)
   * [QR Code does not scan](#qr-code-does-not-scan)
+
+
+## Navigation
+
+There are various choices for navigation, but the basic example given in [the docs](https://facebook.github.io/react-native/docs/navigation.html) is for react-navigation:
+```
+$ npm install --save react-navigation
+```
+
+After a brief example which includes using the App.js file, the reader is then thrown [this link](https://reactnavigation.org/docs/en/getting-started.html) for further reading.
+
+This article talks about rendering the ```<RootStack />``` element in the App.js file.
+Then we can use this:
+```
+const RootStack = createStackNavigator({
+  Home: HomeScreen
+});
+```
+
+The screens were put in a directory called Screens, but not it's unclear how to get the navigation to work in the child components.  The example shows everything in one file, which, I'm sorry, but is not going to happen on this project.  I know this is one way to keep example code simple, let's adhere to the SOLID principal of Single Responsibility
+
+Trying this our in the HomeScreen set the title in the header:
+```
+static navigationOptions = {
+		title: 'List of Cognitive Bias',
+};
+```
+
+That was an unexpected way of learning it.  It was the next part of the navigation tutorial.  We were thinking of putting the title of the passed in bias in the header on the details page but because navigationOptions is a static property, it does not refer to an instance of the component so no props are available.
+
+Apparently we will have to make navigationOptions a function then React Navigation will call it with an object containing ```{ navigation, navigationOptions, screenProps }```.
+
+But that doesn't help us solve the current problem when trying to navigate to the detail screen:
+```
+undefined is not an object evaluating '_this3.props.navigation.navigate')
+onPress
+FetchExample.js:51:27
+```
+
+```
+	render() {
+		const { navigation } = this.props;
+    // or 
+    const { navigation } = this.props.navigation;
+    // or 
+    const { navigate } = this.props.navigation;
+```
+
+The first one works while the other two are syntax errors, but we still get the onPress error noted above.  Also tried putting ```createStackNavigator``` in a separate file and exporting the const from that, but then the error is: ``` The component for route 'Home' must be a React component.```
+
+Well, HomeScreen is a component, and it's configured like name: className.  Even making the name the same as the class name doesn't fix the problem.  Unfortunately this means more reading.  What a drag!  Pirates are on TV tonight...
+
+So during ads in between pirates I did quite a bit of Stack Overflowing. 
+Instead of exporting the App class, export the ```export default RootStack;``` which remember is the ```const RootStack = createStackNavigator```.
+
+Then use ```navigation.navigate('DetailsScreen'``` and I suppose this is necessary in the HomeScreen render function: ```<FetchExample navigation={this.props.navigation}></FetchExample>```.
+
+Then go back to this ```this.props.navigation.navigate('DetailsScreen'```
+
+And the error is gone but there is not navigation.  So, well, that's not very savvy.
+
+Despite the pirates I'm going to sleep.
+
+The next morning when trying to get back to solving the failing navigation problem, despite having installed Watchman, or because of it, when opening a fresh terminal with the 'Homebrew' theme (which is now the default React teminal theme), running ```npm start``` fails with the following output:
+```
+7:38:53 AM: Starting packager...
+***ERROR STARTING PACKAGER***
+Starting React Native packager...
+Scanning folders for symlinks in /Users/tim/repos/loranthifolia-teretifolia-curator/teretifolia/node_modules (17ms)
+Loading dependency graph.
+dyld: Library not loaded: /usr/local/opt/pcre/lib/libpcre.1.dylib
+  Referenced from: /usr/local/Cellar/watchman/4.4.0/libexec/bin/watchman
+  Reason: image not found
+***ERROR STARTING PACKAGER***
+Watchman:  watchman --no-pretty get-sockname returned with exit code=null, signal=SIGTRAP, stderr= dyld: Library not loaded: /usr/local/opt/pcre/lib/libpcre.1.dylib
+  Referenced from: /usr/local/Cellar/watchman/4.4.0/libexec/bin/watchman
+  Reason: image not found
+```
+
+Doing this Google search:
+```
+stackoverflow Watchman: watchman --no-pretty get-sockname returned with exit code=null
+```
+
+[First link](https://stackoverflow.com/questions/50228034/watchman-watchman-no-pretty-get-sockname-returned-with-exit-code-null-signal) two months old with no answer.  Someone in the comments suggested installing watchman, to which the poster replied they had.
+[Second link](https://stackoverflow.com/questions/35006695/unable-to-run-npm-start-for-react-native-project/35018487) the first answer suggests re-installing watchman.
+
+Following the advice from the second link:
+```
+$ npm r -g watchman 
+QuinquenniumF:teretifolia tim$ brew update && brew upgrade
+/usr/local/Library/Homebrew/cmd/update.sh: line 13: /usr/local/Library/ENV/scm/git: No such file or directory
+/usr/local/Library/Homebrew/cmd/update.sh: line 13: /usr/local/Library/ENV/scm/git: No such file or directory
+/usr/local/Library/Homebrew/cmd/update.sh: line 13: /usr/local/Library/ENV/scm/git: No such file or directory
+/usr/local/Library/Homebrew/cmd/update.sh: line 13: /usr/local/Library/ENV/scm/git: No such file or directory
+/usr/local/Library/Homebrew/cmd/update.sh: line 13: /usr/local/Library/ENV/scm/git: No such file or directory
+==> Downloading https://homebrew.bintray.com/bottles-portable-ruby/portable-ruby-2.3.3_2.leopard_64.bottle.tar.gz
+######################################################################## 100.0%
+==> Pouring portable-ruby-2.3.3_2.leopard_64.bottle.tar.gz
+==> Homebrew has enabled anonymous aggregate user behaviour analytics.
+Read the analytics documentation (and how to opt-out) here:
+  https://docs.brew.sh/Analytics
+Error: update-report should not be called directly!
+```
+
+Not sure if that's a show stopper, so moving on with the instructions:
+```
+brew install watchman
+...
+Homebrew no longer needs to have ownership of /usr/local. If you wish you can
+return /usr/local to its default ownership with:
+  sudo chown root:wheel /usr/local
+Error: watchman 4.4.0 is already installed
+To upgrade to 4.9.0, run `brew upgrade watchman`
+```
+
+Again, not sure if that's a problem, so trying ```npm start``` again.
+
+No dice.  Still get the "image not found" error.  Great.  Keep looking.
+
+[Third link](https://github.com/facebook/react-native/issues/4580) is a GitHub issue.  That's not good.  StackOverflow are focused on good answers and positive feedback.  GitHub issues however are a free-for-all unmediated sprawl off suggestions and people throwing their extra errors and problems in.  This means a great deal more sifting.
+
+The first answer is from the official Facebook account:
+```
+facebook-github-bot commented on Dec 6, 2015
+Hey adamski, thanks for reporting this issue!
+
+React Native, as you've probably heard, is getting really popular and truth is we're getting a bit overwhelmed by the activity surrounding it. There are just too many issues for us to manage properly.
+
+If this is a feature request or a bug that you would like to be fixed by the team, please report it on Product Pains. It has a ranking feature that lets us focus on the most important issues the community is experiencing.
+If you don't know how to do something or not sure whether some behavior is expected or a bug, please ask on StackOverflow with the tag react-native or for more real time interactions, ask on Discord in the #react-native channel.
+We welcome clear issues and PRs that are ready for in-depth discussion; thank you for your contributions!
+```
+
+Thanks bot!  You're a great help!  The next response is to open an issue on the Watchman GitHub, then close the issue.  No link to that though, so it's back to Google for us.
+
+[Link four](https://github.com/facebook/react-native/issues/7006)
+
+Another GitHub with the poster basically talking to themselves and no help.  They eventually solve their issue, but it seems different from the problem we're having.
+
+Went back to the second link and realized there was some more advice if the first part didn't work, so trying that:
+```
+brew reinstall libtool --universal && brew unlink libtool && brew link
+  libtool
+```
+
+ But ```npm start``` still fails with the same error.  The last piece of advice is to run ```brew uninstall libtool``` and try the above again.  That ends with this error:
+```
+Error: Invalid usage: This command requires a keg argument
+```
+
+Same error when starting the project.  So for now, going to try going back to the pre-watchman solution:
+```
+$ sudo sysctl -w kern.maxfiles=5242880
+$ sudo sysctl -w kern.maxfilesperproc=524288
+```
+
+However, we have real problems now as this does not help the packager error.  ```npm start``` still hangs with that error.  Since running out of stack overflow questions with the initial search, starting a search for the line ```dyld: Library not loaded: /usr/local/opt/pcre/lib/libpcre.1.dylib```
+
+```
+brew reinstall libtool --universal && brew unlink libtool && brew link libtool
+...
+Unlinking /usr/local/Cellar/libtool/2.4.6_1... 20 symlinks removed
+Linking /usr/local/Cellar/libtool/2.4.6_1... 20 symlinks created
+```
+
+No errors or warnings on that one.  This is promising.
+
+While searching for more answers, came acroos [this one](https://github.com/facebook/react-native/issues/6729) in which the facebook-bot get's pretty heavy handed:
+```
+facebook-github-bot added the For Stack Overflow  label on Mar 31, 2016
+@facebook-github-bot facebook-github-bot closed this on Mar 31, 2016
+@facebook-github-bot facebook-github-bot added the Ran Commands  label on Mar 31, 2016
+@jolt-temporary commented on Jun 23, 2016
+Doesn't this seem like a bug though? I'm getting it too.
+@facebook facebook locked as resolved and limited conversation to collaborators on May 25
+```
+
+Debate is not welcome here.  If I am unable to use the React Native packager, I would also say that this is React Native's problem and should be addressed by the team, not stifled.  Ionic has a similar bot, a.k.a. Justin Willis, but I have never seen an issue locked and comments locked like this before.
+
+Finding anymore help for this problem is getting more and more difficult.  It looks like there are two issues, both Watchman related:
+```
+dyld: Library not loaded: /usr/local/opt/pcre/lib/libpcre.1.dylib
+```
+and
+```
+Watchman:  watchman --no-pretty get-sockname returned with exit code=null, ...
+```
+
+Will keep you all posted.
 
 
 ## Debugging React Native
@@ -119,12 +313,12 @@ in View (at FetchExample.js:39)
 ```
 
 That's the beginning of the <View> element in the render function.
-Some (OK many) items don't have descriptions.  So this:
-```
-item.cognitive_biasDescription.value
-```
-Was causing the error.  But, we don't really want to show the description there anyhow.  And, since there are so few descriptions available on WikiData, we need to also parse Wikipedia's WikiMedia API call result to get a more complete list of cognitive bias and their brief descriptions.  As yet we haven't written this Map merge feature.  That will come soon.  
+Some (OK many) items don't have descriptions.  So this ```item.cognitive_biasDescription.value```
+was causing the error.  
 
+What is the equivalent of *ngIf in React?  Well, it's not that simple.  Any tag you put in the render statement get's instantiated. *ngIf in angular does not instantiate the component that it is attached to. In React if you use an if statement within the return statement then it will still instantiate the component even though it isn't displayed. To achieve a true *ngIf type behavior in React you have to create a variable that holds the conditional component outside of the return statement.
+
+But, we don't really want to show the description there anyhow.  And, since there are so few descriptions available on WikiData, we need to also parse Wikipedia's WikiMedia API call result to get a more complete list of cognitive bias and their brief descriptions.  As yet we haven't written this Map merge feature.  That will come soon.  
 We can add routing and a call to the; Wikipedia page description when an item in our current list is called.  Then, functionality-wise, the React Native app will be on par with the Ionic 4 app.
 
 For now, the React Native Tool for debugging is still stuck on Node.js v6.9.2.  Someone will have to figure out how to make VSCode us a more recent version since it's not picking up the changes nvm makes in the terminal.

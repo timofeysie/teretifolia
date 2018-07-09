@@ -22,6 +22,7 @@
     "art-curator": "^1.2.5-sematically-released",
     "expo": "^27.0.1",
     "react": "16.3.1",
-    "react-native": "~0.55.2"
+    "react-native": "~0.55.2",
+    "react-navigation": "^2.6.1"
   }
 }
