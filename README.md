@@ -227,6 +227,47 @@ Watchman:  watchman --no-pretty get-sockname returned with exit code=null, ...
 
 Will keep you all posted.
 
+Right after that last commit which added the router work from the last few days, this was the solution to the issue.
+```
+brew upgrade watchman
+==> make install
+Error: The `brew link` step did not complete successfully
+The formula built, but is not symlinked into /usr/local
+...
+Error: watchman 4.4.0 is already installed
+To upgrade to 4.9.0, run `brew upgrade watchman`
+QuinquenniumF:teretifolia tim$ brew upgrade watchman
+```
+
+So since it recommended upgrade, tried that.  It seriously took about an hour to complete on this slow home wireless broadband.  But then, starting the app!  It was a close call, but after the errors we got the QR code and the app was back up again:
+```
+$ npm start
+
+> AwesomeProject@0.1.0 start /Users/tim/repos/loranthifolia-teretifolia-curator/teretifolia
+> react-native-scripts start
+
+4:57:40 PM: Starting packager...
+***ERROR STARTING PACKAGER***
+Starting React Native packager...
+Scanning folders for symlinks in /Users/tim/repos/loranthifolia-teretifolia-curator/teretifolia/node_modules (15ms)
+Loading dependency graph.
+2018-07-09T16:58:58,639: [0x7fff761d8300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+2018-07-09T16:58:58,640: [0x7fff761d8300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+***ERROR STARTING PACKAGER***
+2018-07-09T16:58:58,640: [0x7fff761d8300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+***ERROR STARTING PACKAGER***
+2018-07-09T16:59:18,403: [0x7fff761d8300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+***ERROR STARTING PACKAGER***
+2018-07-09T16:59:18,404: [0x7fff761d8300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+2018-07-09T16:59:18,404: [0x7fff761d8300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+Packager started!
+```
+
+All's well that ends well I suppose.  Still, if React Native depends on these tools, it has to deal with problems that arise in the tooling.
+
+Next up, fixing the second route.
+
+
 
 ## Debugging React Native
 
