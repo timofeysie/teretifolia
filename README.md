@@ -9,6 +9,7 @@ We will start with the list first as detailed in [the basics](https://facebook.g
 
 
 ## Table of Contents
+* [Fixing the details route](#fixing-the-details-route)
 * [Navigation](#navigation)
 * [Debugging React Native](#debugging-react-native)
 * [Using the curator package](#using-the-curator-package)
@@ -265,7 +266,7 @@ Packager started!
 
 All's well that ends well I suppose.  Still, if React Native depends on these tools, it has to deal with problems that arise in the tooling.
 
-Next up, fixing the second route.
+Anyhow, the problem with the app not navigating to the next screen was a difference in names between 'Detail' and 'Details'.  Because the screen filename was call Details, we went with that all over and now we get our if parameter and we can move on to getting the content for that item via an API called from a url created by the curator package and parsing it with another function.
 
 
 

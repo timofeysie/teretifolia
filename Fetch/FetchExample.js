@@ -3,6 +3,7 @@ import { FlatList, ActivityIndicator, Text, View  } from 'react-native';
 import { navigation } from 'react-navigation';
 import curator from 'art-curator';
 
+
 export default class FetchExample extends React.Component {
 
 	constructor(props) {
@@ -42,7 +43,7 @@ export default class FetchExample extends React.Component {
 				data={this.state.dataSource}
 				renderItem={({item}) => <Text 
 					onPress={() => {
-						this.props.navigation.push('Details', {
+						this.props.navigation.navigate('Details', {
 							itemId: item.cognitive_biasLabel.value,
 						});
 					}}

@@ -9,28 +9,24 @@ export default class DetailsScreen extends React.Component {
 	}
 	
 	componentDidMount() {
-		console.log('Yes I did!');
 	}
 
-    static navigationOptions = ({ navigation }) => {
-      return {
-        title: navigation.getParam('itemId', 'Problem'),
-      };
-    };
+    // static navigationOptions = ({ navigation }) => {
+    //   return {
+    //     title: this.props.navigation.getParam('itemId', 'Problem'),
+    //   };
+    // };
 
     render() {
       /* 2. Get the param, provide a fallback value if not available */
-      const itemId = navigation.getParam('itemId', 'NO-ID');
-      const otherParam = navigation.getParam('otherParam', 'some default value');
+      const itemId = this.props.navigation.getParam('itemId');
+      console.log('itemId',itemId)
+      const otherParam = this.props.navigation.getParam('otherParam', 'some default value');
       
       return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <Text>Details Screen</Text>
           <Text>itemId: {JSON.stringify(itemId)}</Text>
-          <Button
-            title="Go to Home"
-            onPress={() => this.props.navigation.navigate('Home')}
-          />
           <Button
             title="Go back"
             onPress={() => this.props.navigation.goBack()}

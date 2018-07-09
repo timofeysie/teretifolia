@@ -7,7 +7,7 @@ import { createStackNavigator } from 'react-navigation';
 
 const RootStack = createStackNavigator({
   Home: { screen: HomeScreen },
-  Detail: { screen: DetailsScreen },
+  Details: { screen: DetailsScreen },
 }, { 
   initialRouteName: 'Home', 
 });
