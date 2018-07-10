@@ -16,12 +16,28 @@ export default class FetchDetails extends React.Component {
 		return fetch(wUrl)
 			.then((response) => response.json())
 			.then((responseJson) => {
+				// get the content, remove the html and convert special characters
 				let description = responseJson.parse.text['*'];
 				var stripedHtml = description.replace(/<[^>]+>/g, '');
 				let unescapedHtml = unescape(stripedHtml);
 				unescapedHtml = unescapedHtml.replace(/&#91;/g, '[');
 				unescapedHtml = unescapedHtml.replace(/&#93;/g, ']');
 				unescapedHtml = unescapedHtml.replace(/&#8239;/g, '->');
+				unescapedHtml = unescapedHtml.replace(/&#123;/g, '{');
+				unescapedHtml = unescapedHtml.replace(/&#125;/g, '}');
+				unescapedHtml = unescapedHtml.replace(/&#160;/g, '');
+				unescapedHtml = unescapedHtml.replace(/&amp;/g, '&');
+				// remove preambles
+				const preamble = unescapedHtml.indexOf('This article is about');
+				if (preamble !== -1) {
+					const endOfSentence = unescapedHtml.indexOf('.');
+					unescapedHtml = unescapedHtml.slice(endOfSentence+1, unescapedHtml.length);
+				}
+				const preamble2 = unescapedHtml.indexOf('For other uses, see');
+				if (preamble !== -1) {
+					const endOfSentence = unescapedHtml.indexOf('.');
+					unescapedHtml = unescapedHtml.slice(endOfSentence+1, unescapedHtml.length);
+				}
 				this.setState({
 				isLoading: false,
 				dataSource: unescapedHtml,
