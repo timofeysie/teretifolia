@@ -39,6 +39,161 @@ We will start with the list first as detailed in [the basics](https://facebook.g
   * [QR Code does not scan](#qr-code-does-not-scan)
 
 
+## The details screen
+
+We already have the curator lib creating the url for a single page, and a function to parse the result from an API call.  A remaining issue is where to put the fetch code.  
+
+In the home screen, we have a FetchExample component that does the call and creates the list.  The mixing of concerns makes an Angular developer a little uncomfortable.  But since this is React, probably it's OK to put the Fetch code in the DetailsScreen instead of creating another sub component like FetchExample2.  
+
+There could be a base Fetch class and a base list class that are configurable by a screen to remove this duplication of code, but at this point in the app, it's not a big deal.  If the app were to grow into a monolith, it would certainly be worthwhile to think about a better architectural solution adhering to SOLID principals.
+
+And after the above discussion, suddenly we created the FetchDetails.js file and decided that is more consistent with the app right now.  This class will make the ```curator.createSingleWikiMediaPageUrl()``` call.  But it seems like we may have a problem with the function already:
+```
+7:17:19 AM: TypeError: TypeError: undefined is not an object (evaluating 'pageName.replace')
+...
+This error is located at:
+    in FetchDetails (at DetailsScreen.js:31)
+    in RCTView (at View.js:60)
+    in View (at DetailsScreen.js:29)
+    in DetailsScreen (at SceneView.js:9)
+    ...
+This error is located at:
+    in NavigationContainer (at registerRootComponent.js:35)
+    ...
+- node_modules/art-curator/dist/index.js:82:25 in createSingleWikiMediaPageUrl
+* Fetch/FetchDetails.js:15:13 in componentDidMount
+- node_modules/react-proxy/modules/createPrototypeProxy.js:61:45 in proxiedComponentDidMount
+- node_modules/react-native/Libraries/Renderer/ReactNativeRenderer-dev.js:10627:12 in commitLifeCycles
+- ... 17 more stack frames from framework internals
+```
+
+That's because the itemId prop was not passed down into the details screen.  After that, we get our url and response from the WikiData server:
+```
+7:48:05 AM: responseJson Object {
+7:48:05 AM:   "parse": Object {
+7:48:05 AM:     "pageid": 232445,
+7:48:05 AM:     "text": Object {
+7:48:05 AM:       "*": "<div class=\"mw-parser-output\"><table class=\"vertical-navbox nowraplinks hlist\" style=\"float:right;clear:right;width:22.0em;margin:0 0 1.0em 1.
+```
+
+Now we should be able to call ```curator.parseSingeWikiMediaPage(responseJson)``` to get a list of the <p> elements on that page.
+
+But there might be a problem with THAT parse function:
+```
+7:48:10 AM: fetch error, [TypeError: undefined is not an object (evaluating 'responseJson.results.bindings')]
+* Fetch/FetchDetails.js:27:18 in <unknown>
+```
+
+We haven't really tested this particular function in the curator lib, but it's worth noting why.  That function relies on creating a DOM element from a string contained in the '*' property shown above.  Then we can use normal document functions to get what we want without parsing the string by hand.  But if that object has different functions depending on the response object, then we have a problem.
+
+Also, since the curator is a node package, it doesn't have a window or document object.  So to test the parse functions we would have to include a large library with many more functions that we will every use, just for a unit test.
+
+What we can do now is use that function in the Ionic app (been a while since doing any work on that) by replacing the original that was refactored out into curator.  This will show any issues that happened during the extraction process.  We were able to get the ```responseJson.results.bindings``` from the WikiData url response in the home screen fetch call, so that one worked out OK.
+
+You can see that function [in the curator index file](https://github.com/timofeysie/curator/blob/master/src/index.js):
+```
+function parseSingeWikiMediaPage(res) {
+	const parse = res.json();
+	const content = parse['parse']['text']['*'];
+	let one = this.createElementFromHTML(content);
+	const desc = one.getElementsByClassName('mw-parser-output')[0].children;
+	let descriptions = [];
+	for (let i = 0; i < desc.length;i++) {
+	    descriptions.push(desc[i].innerText);
+	}
+	return descriptions;
+}
+```
+
+First of all we should remove the ```res.json();``` from that.  This is something that can be handled in whatever http utility is used.
+
+After removing that, the error we get is:
+```
+11:43:58 AM: fetch error, [ReferenceError: Can't find variable: parse]
+* Fetch/FetchDetails.js:27:18 in <unknown>
+- node_modules/promise/setimmediate/core.js:37:14 in tryCallOne
+- node_modules/promise/setimmediate/core.js:123:25 in <unknown>
+- ... 10 more stack frames from framework internals
+```
+
+Silly error.  Did you spot it up there?  After fixing ggtg athat another error on the next line:
+```
+12:51:03 PM: fetch error, [TypeError: undefined is not an object (evaluating 'res['parse']['text']')]
+```
+
+From the pasted ```responseJson``` above it certainly looks like parse/text is the proper route.  Let's try this inside the React Native app to see how it goes there.  It looks actually like objects not json despite the conversion inside the fetch block.
+
+We will still run into the document issue.  Since React uses a virtual DOM, there's no "document object" in React Native.  So it seems like maybe it is a good idea to use a library inside the curator lib.  Or, just use string methods and scrape the content as was done in an earlier, simpler time.
+
+Maybe we should just add the html content to the render method (React will scrub it, right?) and use the VDOM to show the content we want.  Right now actually the response looks like a redirect page...
+
+And it is.  If we choose attitude polarization:
+```
+http://en.wikipedia.org/w/api.php?action=parse&section=0&prop=text&format=json&page=attitude_polarization
+```
+
+We get a redirect.  I we replace the _ with a space %20:
+```
+https://en.wikipedia.org/w/api.php?action=parse&section=0&prop=text&format=json&page=attitude%20polarization
+```
+
+Then we get another redirect:
+```
+<p>Redirect to:</p><ul class=\"redirectText\"><li><a href=\"/wiki/Group_polarization#Attitude_polarization\"
+```
+
+It looks like this bias is a sub-category of group polarization:
+```
+https://en.wikipedia.org/w/api.php?action=parse&section=0&prop=text&format=json&page=Group_polarization#Attitude_polarization
+```
+
+This will give us the content we are looking for.  It we were to instead choose "fundamental attribution error", then the curator will create a url that leads directly to the desired content.  I'm thinking we need to look for re-directs now and create a new url when they are found.  I'm worried the hole goes a lot deeper than this however.
+
+The simplest way forward right now is a regex: 
+```
+description.replace(/<[^>]+>/g, '');
+```
+
+This will get us 90% of the way to where we want to be.  Or so some of us here thought until we tried the "Dunning-Kruger effect":
+```
+2:13:31 PM: fetch error, [TypeError: undefined is not an object (evaluating 'responseJson.parse.text')]
+```
+
+The url created for us by the curator:
+```
+http://en.wikipedia.org/w/api.php?action=parse&section=0&prop=text&format=json&page=dunning–kruger_effect
+```
+
+Returns the following:
+```
+{"error":{"code":"missingtitle","info":"The page you specified doesn't exist.","*":"See https://en.wikipedia.org/w/api.php for API usage. Subscribe to the mediawiki-api-announce mailing list at &lt;https://lists.wikimedia.org/mailman/listinfo/mediawiki-api-announce&gt; for notice of API deprecations and breaking changes."},"servedby":"mw1339"}
+```
+
+Actually, if we use capitals with the proper name there, we will get the content:
+https://en.wikipedia.org/w/api.php?action=parse&section=0&prop=text&format=json&page=Dunning%E2%80%93Kruger_effect
+
+So another thing to worry about, the titles are case sensitive.
+
+There are also a lot of characters that slip by our regex.
+```
+&#91; = [
+&#93; = ]
+&#123; = {
+&#125; } (on attitude polarization)
+&#160; = CR?
+&#8239; = link arrow
+```
+
+Without doing too much work, it is easy to just replace these characters each by hand like this:
+```
+unescapedHtml = unescapedHtml.replace(/&#91;/g, '[');
+```
+
+However, since we won't be reviewing each page to scan for unconverted characters, it would be better to automate this process and convert them all automatically.
+
+So stay tuned for that.  For now the WikiMedia (aka Wikipedia content) items and their descriptions needs to be added to the main list in some sort of fashion.  Since this will be over 200, it would be nice to sort by category or alphabetize.  We also have to replace the functions now in curator that were refactored out and are now used in this app.
+
+
 ## Navigation
 
 There are various choices for navigation, but the basic example given in [the docs](https://facebook.github.io/react-native/docs/navigation.html) is for react-navigation:

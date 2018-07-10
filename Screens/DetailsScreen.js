@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button, View, Text } from 'react-native';
-import { createStackNavigator } from 'react-navigation';
-import HomeScreen from './HomeScreen';
+import { Button, View } from 'react-native';
+import FetchDetails from '../Fetch/FetchDetails';
+
 
 export default class DetailsScreen extends React.Component {
     constructor(props) {
@@ -11,22 +11,22 @@ export default class DetailsScreen extends React.Component {
 	componentDidMount() {
 	}
 
-    // static navigationOptions = ({ navigation }) => {
-    //   return {
-    //     title: this.props.navigation.getParam('itemId', 'Problem'),
-    //   };
-    // };
+  static navigationOptions = ({ navigation }) => ({
+    title: navigation.getParam('itemId'),
+     headerTitleStyle : {textAlign: 'center',alignSelf:'center'},
+        headerStyle:{
+            backgroundColor:'white',
+        },
+  });
 
     render() {
       /* 2. Get the param, provide a fallback value if not available */
       const itemId = this.props.navigation.getParam('itemId');
-      console.log('itemId',itemId)
       const otherParam = this.props.navigation.getParam('otherParam', 'some default value');
       
       return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text>Details Screen</Text>
-          <Text>itemId: {JSON.stringify(itemId)}</Text>
+          <FetchDetails itemId={itemId}></FetchDetails>
           <Button
             title="Go back"
             onPress={() => this.props.navigation.goBack()}
