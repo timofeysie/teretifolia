@@ -21,6 +21,19 @@ export default class FetchExample extends React.Component {
 				dataSource: responseJson.results.bindings,
 				}, function() {
 				});
+				const section1Url = curator.createWikiMediaUrl(1);
+				return fetch(section1Url)
+					.then((response) => response.json())
+					.then((responseJson) => {
+						console.log('responseJson',responseJson);
+						this.setState({
+						isLoading: false,
+						dataSource: responseJson.results.bindings,
+						}, function() {
+						});
+				});
+				const section2Url = curator.createWikiMediaUrl(2);
+				const section3Url = curator.createWikiMediaUrl(3);
 			})
 			.catch((error) => {
 				console.error('fetch error',error);

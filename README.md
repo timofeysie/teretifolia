@@ -9,6 +9,7 @@ We will start with the list first as detailed in [the basics](https://facebook.g
 
 
 ## Table of Contents
+* [Trouble with Watchman](#trouble-with-watchman)
 * [Fixing the details route](#fixing-the-details-route)
 * [Navigation](#navigation)
 * [Debugging React Native](#debugging-react-native)
@@ -37,6 +38,141 @@ We will start with the list first as detailed in [the basics](https://facebook.g
   * [Networking](#networking)
   * [iOS Simulator won't open](#ios-simulator-wont-open)
   * [QR Code does not scan](#qr-code-does-not-scan)
+
+
+
+## Trouble with Watchman & Cheerio
+
+After including [Cheerio] in the [curator lib](https://github.com/timofeysie/curator), back here we get a JS build error.  It goes something like this (unable to get the log on this machine, and unable to copy it from the crashed app, despite a 'Copy' button at the bottom):
+```
+The development server returned response error code: 500
+...
+BodyX:
+{"originModulePath":".../node_modules/htmlparser2/lib/Parser.js","message":"unable to resolve module 'events' from 'teretifolia/node_modules/htmlparser2/lib/Parser.js
+...
+Module 'events' does not exist in the Haste module map\n\n THis might be related to https://github.com/facebook/react-native/issues/4968\n
+To resolve this try the following.
+1. clear watchman watches: 'watchman watch-del-all'
+2. Delete the node_modules folder: 'rm -rf node_modules && npm i'
+3. Reset Metro Bundler cache: 'rm -rf /tmp/metro-bundler-cache-*' or 'npm start -- --reset-cache'
+4. Remove ...
+```
+Then the message goes off the screen.
+
+[The link](https://github.com/facebook/react-native/issues/4968) referenced in the message above shows similar steps:
+```
+Delete the node_modules folder - rm -rf node_modules && npm install
+Reset packager cache - rm -fr $TMPDIR/react-* or node_modules/react-native/packager/packager.sh --reset-cache
+Clear watchman watches - watchman watch-del-all
+Recreate the project from scratch
+```
+
+Great.  Really???  From scratch?  Maybe that just means npm start?  That issue is an old one: ```satya164 opened this issue on Dec 25, 2015 · 497 comments```.  Some there blame npm, others the React Native complex build system.  In any event, it's amazing that the issue is still open.  Makes me wonder how many are actually using React Native.
+
+Anyhow, after doing stetps 1-3, got this:
+```
+$ npm i
+npm ERR! cb() never called!
+```
+
+An answer from a 2013 StackOverflow answer says:
+```
+sudo npm cache clean
+```
+
+But that results in this:
+```
+$ sudo npm cache clean
+Password:
+npm ERR! As of npm@5, the npm cache self-heals from corruption issues and data extracted from the cache is guaranteed to be valid. If you want to make sure everything is consistent, use 'npm cache verify' instead.
+npm ERR! 
+npm ERR! If you're sure you want to delete the entire cache, rerun this command with --force.
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /Users/tim/.npm/_logs/2018-07-14T23_06_57_392Z-debug.log
+```
+
+So trying that:
+```
+npm cache verify
+```
+
+If I hadn't already had coffee I would have gone then.  Escpecially since it will mean a new ```npm i``` after.
+
+This completes eventually and we are able to serve the app.  Still can't seem to make the app update on the device dependably.  The app wont load, and just shows an infinite spinner.  Restart the packager and reload the app.  Modify and save a file a few times.
+
+Usually this would then show the bundle building message in the terminal, but can't get this to happen this morning.  Would love to try out the new descriptions from curator, but thinking about going back to the Ionic app which hasn't had any problems serving and lts us force refreshes with good old Chrome.
+
+Did a capital 'R' in the terminal: ``` › Press r to restart packager, or R to restart packager and clear cache.```, killed the Expo app and cleared it's app memory.  Altered a file and loaded the app again, and finally got:
+```
+09:50:35: Your JavaScript transform cache is empty, rebuilding (this may take a minute).
+Building JavaScript bundle [                                ] 0%
+```
+
+Also saw the update in Expo: ```Building JavaScript bundle... 15%```
+
+After ten minutes, the error is the same.  WTF?  Time to try the rest of those stesp.
+
+3. Reset Metro Bundler cache: 'rm -rf /tmp/metro-bundler-cache-*' or 'npm start -- --reset-cache'
+4. Remove haste cache: 'rm -rf /tmp/haste-map-react-native=packager-*'.
+
+Or we could try this advice from that issue:
+```
+re-running npm install <module> —save for each of the missing modules fixes this issue for me.
+```
+
+So doing this:
+```
+npm i htmlparser2 --save
+```
+
+Interesting how we were implementing a DOM parser due to React not having parsing functions, but then we get an error from a lib that seems like it would work for us.
+
+10:16.  Running ```npm start``` again.  10:17.  Same error.  Go thru the steps again:
+1. clear watchman watches: 'watchman watch-del-all'
+2. Delete the node_modules folder: 'rm -rf node_modules && npm i'
+3. Reset Metro Bundler cache: 'rm -rf /tmp/metro-bundler-cache-*' or 'npm start -- --reset-cache'
+4. Remove haste cache: 'rm -rf /tmp/haste-map-react-native=packager-*'.
+
+10:25, ```npm start``` again.
+10:28, trying to load the app on the device.
+10:30, same error.
+
+Thought about detailing the issue on the GitHub, but at the very end of the discussion, found this:
+```
+Locking as recent activity appears unrelated to the original discussion around what caused the packager to fail in this manner. Now that the packager has moved to https://github.com/facebook/metro, we might want to move the discussion to an issue on that repo instead.
+@facebook facebook locked and limited conversation to collaborators on Jun 12
+```
+
+Time's up.  Doing one hour on, one hour taking care of the toddler while the wife gets time off.  Maybe be back here again after another hour, or might go fly the fpv quadcopter on the next time block.
+
+Ended up just doing a system check for the quads.  The 3" and the 6" are both ready to fly and have a couple of batteries charged.
+
+Trying to revert back to the previously working function before Cheerio has screwed up the build.  It turns out at least in Android calling the parse single WikiMedia page crashes the app.  But, when deployed to a device, it gives nothing but a white screen and were waiting for a new cable to do the remote debugging there.
+
+Anyhow, trying to revert to the previously used code is giving us the same old error:
+```
+Module 'events' does not exist in the Haste module
+```
+
+Tried the suggested ```$ npm start -- --reset-cache``` to no avail.
+
+Tried steps 1 to 4 again and then the above for good measure.
+
+Then we get this:
+```
+22:38:01: Starting packager...
+***ERROR STARTING PACKAGER***
+Starting React Native packager...
+Scanning folders for symlinks in /Users/tim/repos/loranthifolia-teretifolia-curator/teretifolia/node_modules (17ms)
+Loading dependency graph.
+2018-07-15T22:39:17,010: [0x7fff7b604300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+***ERROR STARTING PACKAGER***
+2018-07-15T22:39:17,252: [0x7fff7b604300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+2018-07-15T22:39:17,252: [0x7fff7b604300] dirfd(/usr/local/var/run/watchman/tim-state): File exists
+```
+
+But the QR code loads.  However, the app still crashes with the same message.
+
 
 
 ## The details screen

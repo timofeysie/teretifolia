@@ -17,8 +17,8 @@ export default class FetchDetails extends React.Component {
 			.then((response) => response.json())
 			.then((responseJson) => {
 				// get the content, remove the html and convert special characters
-				let description = responseJson.parse.text['*'];
-				var stripedHtml = description.replace(/<[^>]+>/g, '');
+				// let description = curator.parseSingeWikiMediaPage(responseJson);
+				var stripedHtml = responseJson.replace(/<[^>]+>/g, '');
 				let unescapedHtml = unescape(stripedHtml);
 				unescapedHtml = unescapedHtml.replace(/&#91;/g, '[');
 				unescapedHtml = unescapedHtml.replace(/&#93;/g, ']');
@@ -34,13 +34,14 @@ export default class FetchDetails extends React.Component {
 					unescapedHtml = unescapedHtml.slice(endOfSentence+1, unescapedHtml.length);
 				}
 				const preamble2 = unescapedHtml.indexOf('For other uses, see');
-				if (preamble !== -1) {
+				if (preamble2 !== -1) {
 					const endOfSentence = unescapedHtml.indexOf('.');
 					unescapedHtml = unescapedHtml.slice(endOfSentence+1, unescapedHtml.length);
 				}
+
 				this.setState({
 				isLoading: false,
-				dataSource: unescapedHtml,
+				dataSource: description,
 				}, function() {
 				});
 			})
