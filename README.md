@@ -43,7 +43,7 @@ We will start with the list first as detailed in [the basics](https://facebook.g
 
 ## Trouble with Watchman & Cheerio
 
-After including [Cheerio] in the [curator lib](https://github.com/timofeysie/curator), back here we get a JS build error.  It goes something like this (unable to get the log on this machine, and unable to copy it from the crashed app, despite a 'Copy' button at the bottom):
+After including [Cheerio](https://github.com/cheeriojs/cheerio) in the [curator lib](https://github.com/timofeysie/curator), back here we get a JS build error.  It goes something like this (unable to get the log on this machine, and unable to copy it from the crashed app, despite a 'Copy' button at the bottom):
 ```
 The development server returned response error code: 500
 ...
@@ -173,6 +173,18 @@ Loading dependency graph.
 
 But the QR code loads.  However, the app still crashes with the same message.
 
+So going with the regex parsing to get the content from the pages.  Removing Cheerio from the project as well as the other packages installed to try and fix this issue:
+```
++    "2": "^1.0.2",
++    "htmlparser": "^1.7.7",
++    "htmlparser2": "^3.9.2",
+```
+
+However, the error was still there!  So for good measure following the four steps again to make sure all the caches are cleared.
+```
+14:01:22: Your JavaScript transform cache is empty, rebuilding (this may take a minute).
+Building JavaScript bundle [===   ] 30%
+```
 
 
 ## The details screen
